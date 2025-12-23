@@ -30,7 +30,7 @@
         .page { animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Navbar Styles Updated for Larger Icons */
+        /* Navbar Styles - Large & Scrollable */
         .nav-item.active .icon-box { background-color: #304674; color: white; transform: translateY(-5px); box-shadow: 0 8px 20px rgba(48, 70, 116, 0.3); }
         .nav-item.active span { color: #304674; font-weight: 700; }
         .sidebar-item.active { background-color: #304674; color: white; box-shadow: 0 10px 20px -5px rgba(48, 70, 116, 0.4); }
@@ -102,8 +102,8 @@
                 </div>
             </header>
             
-            <!-- Main Content: Added pb-36 to accommodate taller navbar -->
-            <main id="main-content" class="flex-1 overflow-y-auto px-6 pb-36 md:pb-12 hide-scrollbar scroll-smooth">
+            <!-- Main Content with extra padding for mobile nav -->
+            <main id="main-content" class="flex-1 overflow-y-auto px-6 pb-40 md:pb-12 hide-scrollbar scroll-smooth">
                 <div class="max-w-7xl mx-auto w-full">
                     
                     <!-- 1. HOME -->
@@ -459,7 +459,23 @@
                 const u = transactions.filter(t=>t.type==='expense'&&t.category===c.name).reduce((s,t)=>s+Math.abs(t.amount),0);
                 return `<div class="bg-white p-4 rounded-3xl shadow-sm mb-3 relative"><button onclick="delCat(${c.id})" class="absolute top-4 right-4 text-gray-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button><h4 class="font-bold text-sm">${c.name}</h4><p class="text-xs text-gray-400 mb-2">Batas: ${formatIDR(c.limit)}</p><div class="w-full bg-gray-100 h-2 rounded-full"><div class="h-2 rounded-full bg-pastel-blue" style="width:${Math.min((u/c.limit)*100,100)}%"></div></div><p class="text-[10px] mt-1 text-gray-500">Terpakai: ${formatIDR(u)}</p></div>`;
             }).join('');
-            el.innerHTML = `<div class="bg-white p-4 rounded-3xl shadow-sm mb-4"><h3 class="font-bold text-sm mb-3">Tambah Kategori</h3><form onsubmit="event.preventDefault(); addCat()" class="flex gap-2"><input id="cat-name" placeholder="Nama" class="flex-1 bg-gray-50 p-2 rounded-xl text-xs outline-none" required><input id="cat-lim" placeholder="Batas" class="w-24 bg-gray-50 p-2 rounded-xl text-xs outline-none" required oninput="formatInputAmount(this)"><button class="bg-pastel-blue text-white w-10 rounded-xl flex items-center justify-center"><i class="fa-solid fa-plus"></i></button></form></div>` + list;
+            
+            // --- FIX FOR MOBILE LAYOUT: VERTICAL STACK ---
+            el.innerHTML = `
+            <div class="bg-white p-5 rounded-3xl shadow-sm mb-4 border border-gray-100">
+                <h3 class="font-bold text-gray-700 text-sm mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-tags text-pastel-blue"></i> Tambah Kategori
+                </h3>
+                <form onsubmit="event.preventDefault(); addCat()" class="flex flex-col gap-3">
+                    <input id="cat-name" placeholder="Nama Kategori (cth. Skincare)" class="w-full bg-gray-50 p-3 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-pastel-blue/20 transition-all" required>
+                    <div class="flex gap-2">
+                        <input id="cat-lim" placeholder="Batas Budget (Rp)" class="flex-1 bg-gray-50 p-3 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-pastel-blue/20 transition-all" required oninput="formatInputAmount(this)">
+                        <button class="bg-pastel-blue text-white w-12 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20 active:scale-95 transition-transform">
+                            <i class="fa-solid fa-plus text-lg"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>` + list;
         }
         function addCat(){ const n=document.getElementById('cat-name').value, l=parseVal(document.getElementById('cat-lim').value); if(n&&l){categoryBudgets.push({id:Date.now(), name:n, limit:l}); saveData(); updateAll();} }
         function delCat(id){ if(confirm('Hapus?')){categoryBudgets=categoryBudgets.filter(c=>c.id!==id); saveData(); updateAll();} }
@@ -520,15 +536,30 @@
             const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
             const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
             const balance = totalIncome - totalExpense;
+            
+            // Calculate Savings Rate (Ratio)
             const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+            
+            // Analyze Spending Habits (Categories)
             const categories = {};
-            transactions.filter(t => t.type === 'expense').forEach(t => { categories[t.category || 'Lainnya'] = (categories[t.category || 'Lainnya'] || 0) + Math.abs(t.amount); });
+            transactions.filter(t => t.type === 'expense').forEach(t => {
+                categories[t.category || 'Lainnya'] = (categories[t.category || 'Lainnya'] || 0) + Math.abs(t.amount);
+            });
+            // Sort categories highest to lowest
             const topCategories = Object.entries(categories).sort((a,b) => b[1] - a[1]);
             const topCategoryName = topCategories.length > 0 ? topCategories[0][0] : "Belum ada";
+
+            // Determine Risk Profile based on Savings Rate
             let profile = "Konservatif";
             let score = 0;
-            if (savingsRate < 10) { profile = "Sangat Hati-hati"; score = 40; } else if (savingsRate < 30) { profile = "Konservatif"; score = 65; } else if (savingsRate < 50) { profile = "Moderat"; score = 80; } else { profile = "Agresif"; score = 95; }
+            if (savingsRate < 10) { profile = "Sangat Hati-hati"; score = 40; }
+            else if (savingsRate < 30) { profile = "Konservatif"; score = 65; }
+            else if (savingsRate < 50) { profile = "Moderat"; score = 80; }
+            else { profile = "Agresif"; score = 95; }
+
+            // Adjust score if no transactions
             if (transactions.length === 0) { profile = "Belum Ada Data"; score = 0; }
+
             return { totalIncome, totalExpense, balance, savingsRate, topCategories, topCategoryName, profile, score };
         }
 
@@ -542,7 +573,7 @@
             renderPlatformSuggestions(analysis.profile);
         }
 
-        // 3. Platform Recommendations
+        // 3. Platform Recommendations (Static/Hybrid Logic)
         function renderPlatformSuggestions(profile) {
             const container = document.getElementById('platform-list');
             const platforms = [
