@@ -24,13 +24,21 @@
         }
     </script>
     <style>
-        body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #333; -webkit-tap-highlight-color: transparent; }
+        /* DISABLE HORIZONTAL SCROLL GLOBALLY */
+        html, body { 
+            overflow-x: hidden; 
+            width: 100%;
+            background-color: #f8f9fa; 
+            font-family: 'Poppins', sans-serif; 
+            color: #333; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .page { animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Navbar Styles - Large & Scrollable */
         .nav-item.active .icon-box { background-color: #304674; color: white; transform: translateY(-5px); box-shadow: 0 8px 20px rgba(48, 70, 116, 0.3); }
         .nav-item.active span { color: #304674; font-weight: 700; }
         .sidebar-item.active { background-color: #304674; color: white; box-shadow: 0 10px 20px -5px rgba(48, 70, 116, 0.4); }
@@ -103,7 +111,7 @@
             </header>
             
             <!-- Main Content with extra padding for mobile nav -->
-            <main id="main-content" class="flex-1 overflow-y-auto px-6 pb-40 md:pb-12 hide-scrollbar scroll-smooth">
+            <main id="main-content" class="flex-1 overflow-y-auto px-6 pb-40 md:pb-12 hide-scrollbar scroll-smooth w-full">
                 <div class="max-w-7xl mx-auto w-full">
                     
                     <!-- 1. HOME -->
@@ -469,7 +477,7 @@
                 <form onsubmit="event.preventDefault(); addCat()" class="flex flex-col gap-3">
                     <input id="cat-name" placeholder="Nama Kategori (cth. Skincare)" class="w-full bg-gray-50 p-3 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-pastel-blue/20 transition-all" required>
                     <div class="flex gap-2">
-                        <input id="cat-lim" placeholder="Batas Budget (Rp)" class="flex-1 bg-gray-50 p-3 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-pastel-blue/20 transition-all" required oninput="formatInputAmount(this)">
+                        <input id="cat-lim" placeholder="Batas Budget (Rp)" class="flex-1 bg-gray-50 p-3 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-pastel-blue/20 transition-all min-w-0" required oninput="formatInputAmount(this)">
                         <button class="bg-pastel-blue text-white w-12 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20 active:scale-95 transition-transform">
                             <i class="fa-solid fa-plus text-lg"></i>
                         </button>
