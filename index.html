@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyUang - Modern Finance Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'almost-white': '#efefef',
+                        'pastel-blue': '#304674',
+                        'soft-gray': '#d1d5db',
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(48, 70, 116, 0.15)',
+                        'hover': '0 20px 40px -5px rgba(48, 70, 116, 0.25)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #efefef; color: #333; }
+        .fade-in-up { animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .choice-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .choice-card:hover { transform: translateY(-8px) scale(1.02); }
+    </style>
+</head>
+<body class="font-poppins min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+
+    <!-- Decorative Background -->
+    <div class="absolute top-0 left-0 w-96 h-96 bg-pastel-blue opacity-5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+    <div class="absolute bottom-0 right-0 w-80 h-80 bg-blue-300 opacity-10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+
+    <main class="container mx-auto px-6 relative z-10 w-full max-w-5xl text-center">
+        
+        <!-- Header / Logo Area -->
+        <div class="mb-12 fade-in-up" style="animation-delay: 0.1s;">
+            <!-- SPACE LOGO DISINI -->
+            <!-- Ganti src="..." dengan file gambar logomu sendiri -->
+            <img src="image/logo.png" alt="Logo Platform" class="w-20 h-20 rounded-2xl mx-auto mb-6 shadow-soft object-cover">
+            
+            <h1 class="text-4xl md:text-5xl font-bold text-pastel-blue tracking-tight mb-3">Hello, Boss! 👋</h1>
+            <p class="text-gray-500 text-lg md:text-xl font-light">Siap merapikan keuanganmu hari ini?</p>
+        </div>
+
+        <!-- Choice Section -->
+        <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto fade-in-up" style="animation-delay: 0.3s;">
+            
+            <!-- Option 1: My Own (LINKED TO LOGIN) -->
+            <a href="loginregister.html" class="group relative block">
+                <div class="choice-card bg-white rounded-[2rem] p-8 h-full shadow-soft hover:shadow-hover border border-transparent hover:border-pastel-blue/20 flex flex-col items-center justify-center gap-6 cursor-pointer">
+                    <div class="w-20 h-20 rounded-full bg-pastel-blue/10 text-pastel-blue flex items-center justify-center text-3xl group-hover:bg-pastel-blue group-hover:text-white transition-colors duration-300">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="text-center">
+                        <h2 class="text-2xl font-semibold text-pastel-blue mb-2">My Own</h2>
+                        <p class="text-gray-400 text-sm font-light">Atur keuangan pribadi,<br>tabungan, dan impianmu.</p>
+                    </div>
+                    <div class="mt-2 px-6 py-2 rounded-full border border-gray-200 text-xs font-medium text-gray-400 group-hover:border-pastel-blue group-hover:text-pastel-blue transition-all">
+                        Let's Go &rarr;
+                    </div>
+                </div>
+            </a>
+
+            <!-- Option 2: My Business -->
+            <button onclick="showComingSoon()" class="group relative block w-full text-left">
+                <div class="choice-card bg-white/60 rounded-[2rem] p-8 h-full shadow-sm border border-transparent hover:border-gray-300 flex flex-col items-center justify-center gap-6 cursor-pointer grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all">
+                    <span class="absolute top-6 right-6 bg-gray-200 text-gray-500 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Soon</span>
+                    <div class="w-20 h-20 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-3xl group-hover:bg-pastel-blue/10 group-hover:text-pastel-blue transition-colors duration-300">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
+                    <div class="text-center">
+                        <h2 class="text-2xl font-semibold text-gray-500 group-hover:text-pastel-blue transition-colors">My Business</h2>
+                        <p class="text-gray-400 text-sm font-light">Kelola arus kas bisnis<br>dan profit usahamu.</p>
+                    </div>
+                    <div class="mt-2 px-6 py-2 rounded-full border border-gray-200 text-xs font-medium text-gray-400 group-hover:border-pastel-blue/50 group-hover:text-pastel-blue transition-all">
+                        Wait for it ⏳
+                    </div>
+                </div>
+            </button>
+        </div>
+    </main>
+
+    <footer class="absolute bottom-6 w-full text-center text-gray-400 text-xs font-light fade-in-up" style="animation-delay: 0.5s;">
+        &copy; 2024 MyUang Platform. Platform for Your Money.
+    </footer>
+
+    <script>
+        function showComingSoon() {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-6 left-1/2 transform -translate-x-1/2 bg-pastel-blue text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 z-50 animate-bounce';
+            toast.innerHTML = `<i class="fa-solid fa-hammer"></i><span class="text-sm font-medium">Fitur Bisnis sedang dibangun! 🚧</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+    </script>
+</body>
+</html>
