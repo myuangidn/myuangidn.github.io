@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MyUang - Dashboard Keuangan AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
                 extend: {
                     colors: { 'almost-white': '#f8f9fa', 'pastel-blue': '#304674', 'soft-gray': '#e9ecef', 'accent-pink': '#E60073', 'ai-purple': '#8B5CF6' },
                     fontFamily: { 'poppins': ['Poppins', 'sans-serif'] },
-                    boxShadow: { 'soft': '0 10px 40px -10px rgba(48, 70, 116, 0.1)', 'glow': '0 0 15px rgba(139, 92, 246, 0.5)' },
+                    boxShadow: { 'soft': '0 10px 40px -10px rgba(48, 70, 116, 0.1)', 'glow': '0 0 15px rgba(139, 92, 246, 0.5)', 'nav': '0 -5px 20px rgba(0,0,0,0.05)' },
                     animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
                 }
             }
@@ -37,11 +37,14 @@
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; } .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
         .prose h1, .prose h2, .prose h3 { font-weight: bold; margin-bottom: 0.5rem; color: #304674; } .prose ul { list-style-type: disc; padding-left: 1.2rem; margin-bottom: 0.5rem; } .prose p { margin-bottom: 0.5rem; font-size: 0.9rem; line-height: 1.5; } .prose strong { color: #1f2937; }
+        
+        /* SAFE AREA FOR MOBILE NAV */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="bg-almost-white h-screen flex flex-col overflow-hidden">
 
-    <!-- LOGIN & REGISTER (FALLBACK SPA MODE - JUST IN CASE) -->
+    <!-- LOGIN & REGISTER (FALLBACK SPA MODE) -->
     <div id="auth-container" class="absolute inset-0 z-[60] bg-almost-white flex flex-col justify-center p-6 overflow-y-auto">
         <div id="login-page" class="auth-page max-w-md mx-auto w-full text-center">
             <p class="text-gray-400 mb-4">Sesi habis atau belum login.</p>
@@ -56,8 +59,7 @@
         <aside class="hidden md:flex w-72 bg-white flex-col shadow-sidebar z-50 h-full border-r border-gray-100">
             <div class="p-8 pb-4">
                 <div class="flex items-center gap-3 mb-6">
-                    <!-- SPACE LOGO SIDEBAR -->
-                    <img src="image/logo.png" alt="Logo" class="w-10 h-10 rounded-xl shadow-soft object-cover">
+                    <img src="https://placehold.co/100x100/304674/white?text=LOGO" alt="Logo" class="w-10 h-10 rounded-xl shadow-soft object-cover">
                     <h2 class="text-xl font-bold text-gray-800">MyUang</h2>
                 </div>
                 <div class="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
@@ -97,22 +99,18 @@
                 </div>
             </header>
             
-            <main id="main-content" class="flex-1 overflow-y-auto px-6 pb-32 md:pb-12 hide-scrollbar">
+            <!-- Main Content: Added pb-32 to ensure content is not hidden behind the fixed nav -->
+            <main id="main-content" class="flex-1 overflow-y-auto px-6 pb-32 md:pb-12 hide-scrollbar scroll-smooth">
                 <div class="max-w-7xl mx-auto w-full">
                     
                     <!-- 1. HOME -->
                     <div id="home" class="page space-y-6">
-                        <!-- Budget Warning -->
                         <div id="home-budget-warning" class="hidden p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center gap-3 animate-pulse">
                             <i class="fa-solid fa-circle-exclamation text-xl"></i>
-                            <div>
-                                <p class="font-bold text-sm">Peringatan Budget!</p>
-                                <p class="text-xs">Kamu sudah boros nih, pengeluaran melebihi batas budget!</p>
-                            </div>
+                            <div><p class="font-bold text-sm">Peringatan Budget!</p><p class="text-xs">Kamu sudah boros nih, pengeluaran melebihi batas budget!</p></div>
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <!-- Saldo Card -->
                             <div class="bg-pastel-blue rounded-[2rem] p-8 text-white shadow-soft relative overflow-hidden h-full flex flex-col justify-center">
                                 <div class="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                                 <div class="relative z-10">
@@ -120,7 +118,6 @@
                                     <h2 id="current-balance" class="text-4xl lg:text-5xl font-bold tracking-tight">Rp 0</h2>
                                 </div>
                             </div>
-                            <!-- Actions -->
                             <div class="grid grid-cols-2 gap-4">
                                 <button onclick="showPage('income')" class="bg-white p-6 rounded-[2rem] shadow-card flex flex-col justify-center items-start gap-3 hover:shadow-soft hover:-translate-y-1 transition-all group h-full">
                                     <div class="w-12 h-12 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform"><i class="fa-solid fa-arrow-down"></i></div>
@@ -132,18 +129,13 @@
                                 </button>
                             </div>
                         </div>
-                        <!-- Currency Converter Button -->
                         <button onclick="showPage('currencyConverter')" class="w-full bg-white p-5 rounded-3xl shadow-card flex items-center justify-between hover:shadow-soft transition-all group">
                              <div class="flex items-center gap-4">
                                  <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors"><i class="fa-solid fa-globe"></i></div>
-                                 <div class="text-left">
-                                     <span class="font-bold text-gray-800 text-sm block">Konversi Mata Uang Asing</span>
-                                     <span class="text-xs text-gray-400">USD, EUR, SGD, MYR ke Rupiah</span>
-                                 </div>
+                                 <div class="text-left"><span class="font-bold text-gray-800 text-sm block">Konversi Mata Uang Asing</span><span class="text-xs text-gray-400">USD, EUR, SGD, MYR ke Rupiah</span></div>
                              </div>
                              <i class="fa-solid fa-chevron-right text-gray-300"></i>
                         </button>
-                        <!-- Recent Transactions -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div class="lg:col-span-3">
                                 <div class="flex justify-between items-end mb-4"><h3 class="text-lg font-bold text-pastel-blue">Aktivitas Terbaru</h3><a href="#" onclick="showPage('transaction')" class="text-xs text-gray-400 hover:text-pastel-blue">Lihat Semua</a></div>
@@ -256,9 +248,7 @@
                     
                     <div id="profile" class="page hidden flex justify-center">
                         <div class="bg-white rounded-3xl shadow-card p-8 text-center w-full max-w-md h-fit">
-                            <!-- SPACE LOGO PROFILE -->
-                            <img src="image/logo.png" alt="Logo" class="w-20 h-20 rounded-full mx-auto mb-4 shadow-soft object-cover">
-                            
+                            <img src="https://placehold.co/100x100/304674/white?text=LOGO" alt="Logo" class="w-20 h-20 rounded-full mx-auto mb-4 shadow-soft object-cover">
                             <h3 id="profile-name" class="text-xl font-bold text-gray-800">User Name</h3>
                             <p id="profile-email" class="text-sm text-gray-400 mb-6">user@example.com</p>
                             <div class="space-y-3">
@@ -283,8 +273,8 @@
                 </div>
             </main>
 
-            <!-- NAV MOBILE -->
-            <nav class="md:hidden bg-white rounded-t-[2rem] shadow-nav absolute bottom-0 w-full z-40">
+            <!-- NAV MOBILE (FIXED POSITION) -->
+            <nav class="md:hidden bg-white rounded-t-[2rem] shadow-nav fixed bottom-0 w-full z-40 pb-safe">
                 <div class="flex overflow-x-auto hide-scrollbar px-2 py-4 gap-2">
                     <a href="#" onclick="showPage('home')" class="nav-item active flex-shrink-0 w-[60px] flex flex-col items-center gap-1"><div class="icon-box w-10 h-10 rounded-2xl bg-transparent text-gray-400 flex items-center justify-center text-lg"><i class="fa-solid fa-wallet"></i></div><span class="text-[9px] text-gray-400">Dompet</span></a>
                     <a href="#" onclick="showPage('transaction')" class="nav-item flex-shrink-0 w-[60px] flex flex-col items-center gap-1"><div class="icon-box w-10 h-10 rounded-2xl bg-transparent text-gray-400 flex items-center justify-center text-lg"><i class="fa-solid fa-list-ul"></i></div><span class="text-[9px] text-gray-400">Trans</span></a>

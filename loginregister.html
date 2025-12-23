@@ -26,7 +26,7 @@
         <div id="login-page" class="transition-all duration-500">
             <div class="text-center mb-10">
                 <!-- SPACE LOGO DISINI -->
-                <img src="image/logo.png" alt="Logo Platform" class="w-20 h-20 rounded-2xl mx-auto mb-4 shadow-soft object-cover">
+                <img src="https://placehold.co/150x150/304674/white?text=LOGO" alt="Logo Platform" class="w-20 h-20 rounded-2xl mx-auto mb-4 shadow-soft object-cover">
                 
                 <h2 class="text-3xl font-bold text-pastel-blue">Welcome Back!</h2>
                 <p class="text-gray-400 text-sm mt-2">Login dulu biar keuangan aman, Boss.</p>
@@ -55,14 +55,13 @@
                 <div class="bg-white p-1 rounded-2xl shadow-sm"><input type="text" id="register-name" placeholder="Full Name" class="w-full bg-transparent p-4 outline-none text-gray-700 placeholder-gray-400" required></div>
                 <div class="bg-white p-1 rounded-2xl shadow-sm"><input type="email" id="register-email" placeholder="Email Address" class="w-full bg-transparent p-4 outline-none text-gray-700 placeholder-gray-400" required></div>
                 <div class="bg-white p-1 rounded-2xl shadow-sm"><input type="password" id="register-password" placeholder="Password" class="w-full bg-transparent p-4 outline-none text-gray-700 placeholder-gray-400" required></div>
-                <div class="bg-white p-1 rounded-2xl shadow-sm relative">
-                    <select id="register-country" class="w-full bg-transparent p-4 outline-none text-gray-700 appearance-none bg-white rounded-xl" required>
-                        <option value="" disabled selected>Select Country</option>
-                        <option value="Indonesia">Indonesia (Rp)</option>
-                        <option value="Malaysia">Malaysia (RM)</option>
-                    </select>
-                    <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400"><i class="fa-solid fa-chevron-down"></i></div>
+                
+                <!-- AUTO LOCKED COUNTRY (Hidden visual, but logic remains) -->
+                <div class="w-full bg-gray-100 p-4 rounded-2xl text-gray-400 flex justify-between items-center cursor-not-allowed opacity-70">
+                    <span>Indonesia (IDR)</span>
+                    <i class="fa-solid fa-lock text-xs"></i>
                 </div>
+
                 <p id="register-error" class="text-red-500 text-xs text-center hidden"></p>
                 <button type="submit" class="w-full bg-pastel-blue text-white font-semibold py-4 rounded-2xl shadow-soft hover:shadow-lg transition-all transform active:scale-95">Register</button>
             </form>
@@ -82,31 +81,30 @@
             window.location.href = 'mainapp.html';
         }
 
-        // --- LOGIN LOGIC (Compatible with mainapp.html) ---
+        // --- LOGIN LOGIC ---
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            // Gunakan key 'user_' agar sesuai dengan mainapp.html
             const user = JSON.parse(localStorage.getItem(`user_${email}`));
             const errorEl = document.getElementById('login-error');
 
-            if (user && user.pass === password) { // mainapp uses 'pass', not 'password'
-                localStorage.setItem('activeUser', email); // mainapp uses 'activeUser'
+            if (user && user.pass === password) {
+                localStorage.setItem('activeUser', email);
                 redirectUser();
             } else {
-                errorEl.textContent = 'Invalid email or password (or user not found).';
+                errorEl.textContent = 'Invalid email or password.';
                 errorEl.classList.remove('hidden');
             }
         });
 
-        // --- REGISTER LOGIC (Compatible with mainapp.html) ---
+        // --- REGISTER LOGIC ---
         document.getElementById('register-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const name = document.getElementById('register-name').value;
             const email = document.getElementById('register-email').value;
             const pass = document.getElementById('register-password').value;
-            const country = document.getElementById('register-country').value;
+            const country = 'Indonesia'; // HARDCODED COUNTRY
             const errorEl = document.getElementById('register-error');
 
             if (localStorage.getItem(`user_${email}`)) {
@@ -115,7 +113,6 @@
                 return;
             }
             
-            // Simpan format yang sama dengan mainapp.html
             const newUser = { name, email, pass, country }; 
             localStorage.setItem(`user_${email}`, JSON.stringify(newUser));
             localStorage.setItem('activeUser', email);
