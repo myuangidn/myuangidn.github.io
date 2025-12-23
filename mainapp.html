@@ -520,73 +520,41 @@
             const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
             const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
             const balance = totalIncome - totalExpense;
-            
-            // Calculate Savings Rate (Ratio)
             const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
-            
-            // Analyze Spending Habits (Categories)
             const categories = {};
-            transactions.filter(t => t.type === 'expense').forEach(t => {
-                categories[t.category || 'Lainnya'] = (categories[t.category || 'Lainnya'] || 0) + Math.abs(t.amount);
-            });
-            // Sort categories highest to lowest
+            transactions.filter(t => t.type === 'expense').forEach(t => { categories[t.category || 'Lainnya'] = (categories[t.category || 'Lainnya'] || 0) + Math.abs(t.amount); });
             const topCategories = Object.entries(categories).sort((a,b) => b[1] - a[1]);
             const topCategoryName = topCategories.length > 0 ? topCategories[0][0] : "Belum ada";
-
-            // Determine Risk Profile based on Savings Rate
             let profile = "Konservatif";
             let score = 0;
-            if (savingsRate < 10) { profile = "Sangat Hati-hati"; score = 40; }
-            else if (savingsRate < 30) { profile = "Konservatif"; score = 65; }
-            else if (savingsRate < 50) { profile = "Moderat"; score = 80; }
-            else { profile = "Agresif"; score = 95; }
-
-            // Adjust score if no transactions
+            if (savingsRate < 10) { profile = "Sangat Hati-hati"; score = 40; } else if (savingsRate < 30) { profile = "Konservatif"; score = 65; } else if (savingsRate < 50) { profile = "Moderat"; score = 80; } else { profile = "Agresif"; score = 95; }
             if (transactions.length === 0) { profile = "Belum Ada Data"; score = 0; }
-
             return { totalIncome, totalExpense, balance, savingsRate, topCategories, topCategoryName, profile, score };
         }
 
         function updateInvestmentPage() {
             const analysis = analyzeFinancialProfile();
-            
-            // Update UI Cards
             document.getElementById('health-score').innerText = analysis.score;
             document.getElementById('health-status').innerText = analysis.score > 70 ? "Sangat Sehat" : (analysis.score > 50 ? "Cukup Sehat" : "Perlu Perbaikan");
             document.getElementById('health-status').className = `text-xs mt-2 font-medium ${analysis.score > 70 ? 'text-green-500' : (analysis.score > 50 ? 'text-yellow-500' : 'text-red-500')}`;
-            
             document.getElementById('risk-profile').innerText = analysis.profile;
-            document.getElementById('invest-potential').innerText = formatIDR(Math.max(0, analysis.balance * 0.2)); // Suggest 20% of surplus
-
+            document.getElementById('invest-potential').innerText = formatIDR(Math.max(0, analysis.balance * 0.2)); 
             renderPlatformSuggestions(analysis.profile);
         }
 
-        // 3. Platform Recommendations (Static/Hybrid Logic)
+        // 3. Platform Recommendations
         function renderPlatformSuggestions(profile) {
             const container = document.getElementById('platform-list');
-            
             const platforms = [
                 { name: "Bibit", type: "Reksadana", suit: ["Konservatif", "Moderat"], desc: "Investasi otomatis & pemula.", color: "bg-green-100 text-green-700" },
                 { name: "Ajaib", type: "Saham & Kripto", suit: ["Moderat", "Agresif"], desc: "Untuk yang suka trading.", color: "bg-blue-100 text-blue-700" },
                 { name: "Pluang", type: "Emas & Indeks", suit: ["Konservatif", "Agresif"], desc: "Aset beragam dalam satu aplikasi.", color: "bg-yellow-100 text-yellow-700" },
                 { name: "DepositoBank", type: "Simpanan", suit: ["Sangat Hati-hati"], desc: "Risiko sangat rendah.", color: "bg-gray-100 text-gray-700" }
             ];
-
-            // Filter logic simple
             let filtered = platforms.filter(p => p.suit.includes(profile));
-            if(profile === "Belum Ada Data") filtered = platforms; // Show all if no data
-            if(filtered.length === 0) filtered = [platforms[0]]; // Fallback
-
-            container.innerHTML = filtered.map(p => `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${p.color}">${p.type}</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square text-gray-300"></i>
-                    </div>
-                    <h4 class="font-bold text-gray-800">${p.name}</h4>
-                    <p class="text-xs text-gray-500 mt-1">${p.desc}</p>
-                </div>
-            `).join('');
+            if(profile === "Belum Ada Data") filtered = platforms; 
+            if(filtered.length === 0) filtered = [platforms[0]]; 
+            container.innerHTML = filtered.map(p => `<div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"><div class="flex justify-between items-start mb-2"><span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${p.color}">${p.type}</span><i class="fa-solid fa-arrow-up-right-from-square text-gray-300"></i></div><h4 class="font-bold text-gray-800">${p.name}</h4><p class="text-xs text-gray-500 mt-1">${p.desc}</p></div>`).join('');
         }
 
         // 4. AI GENERATION LOGIC
@@ -594,126 +562,59 @@
             const loading = document.getElementById('ai-loading');
             const content = document.getElementById('ai-content');
             const btn = document.getElementById('btn-generate-ai');
-            
-            loading.classList.remove('hidden');
-            content.classList.add('hidden');
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-
+            loading.classList.remove('hidden'); content.classList.add('hidden'); btn.disabled = true; btn.classList.add('opacity-50');
             const analysis = analyzeFinancialProfile();
             const apiKey = localStorage.getItem('gemini_key');
-
-            // --- STRATEGY: IF KEY EXISTS, USE API. IF NOT, USE FALLBACK RULES ---
             
             if (apiKey && analysis.totalIncome > 0) {
                 try {
-                    // Call Gemini API
-                    const prompt = `
-                        Bertindaklah sebagai penasihat keuangan pribadi yang ramah dan bijaksana untuk pengguna aplikasi "MyUang".
-                        Analisis data keuangan berikut dalam bahasa Indonesia yang santai tapi edukatif:
-                        - Total Pemasukan: ${formatIDR(analysis.totalIncome)}
-                        - Total Pengeluaran: ${formatIDR(analysis.totalExpense)}
-                        - Sisa Uang: ${formatIDR(analysis.balance)}
-                        - Kategori Pengeluaran Terbesar: ${analysis.topCategoryName}
-                        - Rasio Tabungan: ${analysis.savingsRate.toFixed(1)}%
-
-                        Berikan 3 poin saran singkat:
-                        1. Evaluasi singkat kebiasaan belanja (terutama kategori terbesar).
-                        2. Saran alokasi investasi spesifik (sebutkan instrumen seperti Reksadana, Saham, atau Emas) yang cocok dengan sisa uang tersebut.
-                        3. Satu kalimat motivasi keuangan.
-                        Gunakan format Markdown bold untuk poin penting. Jangan terlalu formal.
-                    `;
-
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                    });
-
+                    const prompt = `Bertindaklah sebagai penasihat keuangan pribadi untuk MyUang. Data: Pemasukan ${formatIDR(analysis.totalIncome)}, Pengeluaran ${formatIDR(analysis.totalExpense)}, Sisa ${formatIDR(analysis.balance)}, Top Kategori ${analysis.topCategoryName}, Rasio Tabungan ${analysis.savingsRate.toFixed(1)}%. Berikan 3 saran singkat: evaluasi belanja, saran alokasi investasi (Reksadana/Saham/Emas), dan 1 kalimat motivasi. Gunakan Markdown. Bahasa Indonesia santai.`;
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                     const data = await response.json();
                     if(data.error) throw new Error(data.error.message);
-                    
-                    const aiText = data.candidates[0].content.parts[0].text;
-                    content.innerHTML = marked.parse(aiText);
-
-                } catch (error) {
-                    console.error(error);
-                    content.innerHTML = `<p class="text-red-500 text-xs">Gagal menghubungi AI: ${error.message}. Menggunakan saran offline.</p>` + generateOfflineAdvice(analysis);
-                }
-            } else {
-                // FALLBACK / OFFLINE MODE / NO API KEY
-                // Simulate delay for "Thinking" feel
-                await new Promise(r => setTimeout(r, 1500));
-                content.innerHTML = generateOfflineAdvice(analysis);
-            }
-
-            loading.classList.add('hidden');
-            content.classList.remove('hidden');
-            btn.disabled = false;
-            btn.classList.remove('opacity-50');
+                    content.innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
+                } catch (error) { console.error(error); content.innerHTML = `<p class="text-red-500 text-xs">Gagal menghubungi AI. Menggunakan saran offline.</p>` + generateOfflineAdvice(analysis); }
+            } else { await new Promise(r => setTimeout(r, 1500)); content.innerHTML = generateOfflineAdvice(analysis); }
+            loading.classList.add('hidden'); content.classList.remove('hidden'); btn.disabled = false; btn.classList.remove('opacity-50');
         }
 
         function generateOfflineAdvice(data) {
-            // Simple Rule-Based Logic (Fallback)
-            if (data.totalIncome === 0) return "<p>Halo! Saya belum memiliki cukup data. Yuk catat pemasukan dan pengeluaranmu dulu agar saya bisa memberikan saran investasi yang akurat!</p>";
-
+            if (data.totalIncome === 0) return "<p>Halo! Yuk catat pemasukan dan pengeluaranmu dulu agar saya bisa memberikan saran investasi yang akurat!</p>";
             let advice = "";
-            
-            // Spending analysis
             if (data.savingsRate < 10) {
-                advice += `<p><strong>Waduh, hati-hati!</strong> Tabunganmu di bawah 10%. Terlihat pengeluaranmu di kategori <strong>${data.topCategoryName}</strong> cukup besar. Coba kurangi jajan-jajan kecil ya.</p>`;
-                advice += `<p class="mt-2">💡 <strong>Saran:</strong> Fokus dulu membangun <em>Dana Darurat</em>. Taruh sisa uangmu di <strong>Reksadana Pasar Uang</strong> yang likuid dan rendah risiko.</p>`;
+                advice += `<p><strong>Waduh, hati-hati!</strong> Tabunganmu di bawah 10%. Kategori <strong>${data.topCategoryName}</strong> terlihat boros. Kurangi jajan ya.</p><p class="mt-2">💡 <strong>Saran:</strong> Fokus Dana Darurat di <strong>Reksadana Pasar Uang</strong>.</p>`;
             } else if (data.savingsRate < 40) {
-                advice += `<p><strong>Kerja bagus!</strong> Keuanganmu cukup stabil. Kamu bisa menyisihkan sekitar ${data.savingsRate.toFixed(0)}% pendapatan.</p>`;
-                advice += `<p class="mt-2">💡 <strong>Saran:</strong> Kamu cocok mulai mencicil <strong>Emas</strong> atau <strong>Reksadana Obligasi</strong>. Ini seimbang antara risiko dan keuntungan.</p>`;
+                advice += `<p><strong>Kerja bagus!</strong> Keuangan stabil. Kamu menyisihkan ${data.savingsRate.toFixed(0)}%.</p><p class="mt-2">💡 <strong>Saran:</strong> Cicil <strong>Emas</strong> atau <strong>Reksadana Obligasi</strong>.</p>`;
             } else {
-                advice += `<p><strong>Luar biasa!</strong> Kamu sangat hemat dan punya cashflow sehat (Surplus > 40%). Kamu punya modal kuat untuk melipatgandakan kekayaan.</p>`;
-                advice += `<p class="mt-2">💡 <strong>Saran:</strong> Pertimbangkan instrumen agresif seperti <strong>Saham Bluechip</strong> (BBCA, BBRI) atau Reksadana Saham untuk jangka panjang.</p>`;
+                advice += `<p><strong>Luar biasa!</strong> Cashflow sehat (Surplus > 40%).</p><p class="mt-2">💡 <strong>Saran:</strong> Coba instrumen agresif seperti <strong>Saham Bluechip</strong>.</p>`;
             }
-
             return advice;
         }
 
-
-        // --- CHARTING ---
         function renderCharts(){
             if(cashFlowChartInstance) cashFlowChartInstance.destroy();
             if(incomeExpenseChartInstance) incomeExpenseChartInstance.destroy();
             if(expenseChartInstance) expenseChartInstance.destroy();
-
-            // 1. Cashflow
             const ctx1 = document.getElementById('cashFlowChart');
             if(ctx1){
-                const d = [0,0,0,0,0,0].map((_,i)=>{ 
-                    const dt=new Date(); dt.setMonth(dt.getMonth()-i); 
-                    const inc = transactions.filter(t=>t.type==='income'&&new Date(t.date).getMonth()===dt.getMonth()).reduce((s,t)=>s+t.amount,0);
-                    const exp = transactions.filter(t=>t.type==='expense'&&new Date(t.date).getMonth()===dt.getMonth()).reduce((s,t)=>s+Math.abs(t.amount),0);
-                    return {l:dt.toLocaleString('id-ID',{month:'short'}), i:inc, e:exp};
-                }).reverse();
+                const d = [0,0,0,0,0,0].map((_,i)=>{ const dt=new Date(); dt.setMonth(dt.getMonth()-i); const inc = transactions.filter(t=>t.type==='income'&&new Date(t.date).getMonth()===dt.getMonth()).reduce((s,t)=>s+t.amount,0); const exp = transactions.filter(t=>t.type==='expense'&&new Date(t.date).getMonth()===dt.getMonth()).reduce((s,t)=>s+Math.abs(t.amount),0); return {l:dt.toLocaleString('id-ID',{month:'short'}), i:inc, e:exp}; }).reverse();
                 cashFlowChartInstance = new Chart(ctx1, {type:'bar', data:{labels:d.map(x=>x.l), datasets:[{label:'Masuk',data:d.map(x=>x.i),backgroundColor:'#a3bffa'},{label:'Keluar',data:d.map(x=>x.e),backgroundColor:'#ffb3c1'}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{grid:{borderDash:[5,5]}}}}});
             }
-
-            // 2. In vs Out
             const ctx2 = document.getElementById('incomeExpenseChart');
             if(ctx2){
-                const i = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-                const e = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+Math.abs(t.amount),0);
+                const i = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0); const e = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+Math.abs(t.amount),0);
                 incomeExpenseChartInstance = new Chart(ctx2, {type:'doughnut', data:{labels:['Masuk','Keluar'], datasets:[{data:[i,e], backgroundColor:['#4ade80','#ef4444'], borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}}});
             }
-
-            // 3. Breakdown
             const ctx3 = document.getElementById('expenseBreakdownChart');
             if(ctx3){
-                const cats = {};
-                transactions.filter(t=>t.type==='expense').forEach(t=>{ const c=t.category||'Lainnya'; cats[c]=(cats[c]||0)+Math.abs(t.amount); });
-                const l=Object.keys(cats), d=Object.values(cats);
+                const cats = {}; transactions.filter(t=>t.type==='expense').forEach(t=>{ const c=t.category||'Lainnya'; cats[c]=(cats[c]||0)+Math.abs(t.amount); }); const l=Object.keys(cats), d=Object.values(cats);
                 expenseChartInstance = new Chart(ctx3, {type:'doughnut', data:{labels:l.length?l:['Kosong'], datasets:[{data:l.length?d:[1], backgroundColor:l.length?['#304674','#E60073','#d1d5db','#fbbf24']:['#f3f4f6'], borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}}});
             }
         }
         
         function resetAllData() { if(confirm("Hapus SEMUA data?")){ localStorage.clear(); location.reload(); } }
         function deleteAccount() { resetAllData(); }
-        function logout() { localStorage.removeItem('activeUser'); window.location.href = 'loginregister.html'; }
+        function logout() { localStorage.removeItem('activeUser'); window.location.href = 'loginregister.html'; } // Redirect to login
         window.resetAllData=resetAllData; window.deleteAccount=deleteAccount; window.logout=logout;
 
         window.onload = () => { checkLogin(); fetchRates(); };
