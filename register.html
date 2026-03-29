@@ -51,7 +51,7 @@
     <script>
         const supabaseUrl = 'https://pmuufdztdkaiblyflmij.supabase.co';
         const supabaseKey = 'sb_publishable_M-JFpIm9PKoJjnyLSqxQWQ_cD1_vOeG';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -64,7 +64,7 @@
             const password = document.getElementById('register-password').value;
             const errorEl = document.getElementById('register-error');
 
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await supabaseClient.auth.signUp({
                 email, password,
                 options: { data: { full_name: name } }
             });
@@ -82,7 +82,7 @@
 
         window.onload = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) window.location.href = 'mainapp.html';
             } catch (err) { console.error(err); }
         }
