@@ -1,7 +1,7 @@
 // GLOBALS
 const supabaseUrl = 'https://pmuufdztdkaiblyflmij.supabase.co';
 const supabaseKey = 'sb_publishable_M-JFpIm9PKoJjnyLSqxQWQ_cD1_vOeG';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let transactions = [], savingsGoals = [], budget = null, categoryBudgets = [], currentUser = null;
 let cashFlowChartInstance=null, expenseChartInstance=null, incomeExpenseChartInstance=null;
@@ -11,21 +11,21 @@ let exchangeRates = {};
 async function loadData() {
     if (!currentUser) return;
     
-    const { data: txs } = await supabase.from('transactions').select('*').order('date', { ascending: true });
+    const { data: txs } = await supabaseClient.from('transactions').select('*').order('date', { ascending: true });
     transactions = txs || [];
     
-    const { data: svgs } = await supabase.from('savings_goals').select('*').order('date', { ascending: true });
+    const { data: svgs } = await supabaseClient.from('savings_goals').select('*').order('date', { ascending: true });
     savingsGoals = svgs || [];
     
-    const { data: bg } = await supabase.from('budget').select('*').single();
+    const { data: bg } = await supabaseClient.from('budget').select('*').single();
     budget = bg ? { id: bg.id, limit: bg.monthly_limit } : null;
     
-    const { data: cb } = await supabase.from('category_budgets').select('*');
+    const { data: cb } = await supabaseClient.from('category_budgets').select('*');
     categoryBudgets = cb ? cb.map(c => ({ id: c.id, name: c.name, limit: c.category_limit })) : [];
 }
 
 async function checkLogin() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) {
         document.getElementById('auth-container').classList.remove('hidden');
         document.getElementById('app-container').classList.add('hidden');
@@ -63,7 +63,7 @@ document.getElementById('income-form').addEventListener('submit', async (e) => {
     const n = document.getElementById('income-name').value, a = parseVal(document.getElementById('income-amount').value), c = document.getElementById('income-category').value;
     if(n && a>0) { 
         const tx = { user_id: currentUser.id, name:n, amount:a, type:'income', category:c, date:new Date().toISOString() };
-        const { data } = await supabase.from('transactions').insert([tx]).select();
+        const { data } = await supabaseClient.from('transactions').insert([tx]).select();
         if(data) transactions.push(data[0]); 
         updateAll(); e.target.reset(); showPage('home'); 
     }
@@ -74,7 +74,7 @@ document.getElementById('expense-form').addEventListener('submit', async (e) => 
     const n = document.getElementById('expense-name').value, a = parseVal(document.getElementById('expense-amount').value), c = document.getElementById('expense-category').value;
     if(n && a>0) { 
         const tx = { user_id: currentUser.id, name:n, amount:-a, type:'expense', category:c, date:new Date().toISOString() };
-        const { data } = await supabase.from('transactions').insert([tx]).select();
+        const { data } = await supabaseClient.from('transactions').insert([tx]).select();
         if(data) transactions.push(data[0]); 
         updateAll(); e.target.reset(); showPage('home'); 
     }
@@ -92,7 +92,7 @@ document.getElementById('saving-goal-form').addEventListener('submit', async (e)
         saved_amount: 0, 
         completed: false 
     };
-    const { data } = await supabase.from('savings_goals').insert([g]).select();
+    const { data } = await supabaseClient.from('savings_goals').insert([g]).select();
     if(data) savingsGoals.push(data[0]); 
     updateAll(); e.target.reset(); showPage('saving');
 });
@@ -203,14 +203,14 @@ function updateCatDropdown() {
 async function setBudget(){ 
     const v=parseVal(document.getElementById('bg-limit').value); 
     if(v>0){ 
-        const { data } = await supabase.from('budget').insert([{ user_id: currentUser.id, monthly_limit: v }]).select();
+        const { data } = await supabaseClient.from('budget').insert([{ user_id: currentUser.id, monthly_limit: v }]).select();
         if(data) budget={ id: data[0].id, limit: v }; 
         updateAll(); 
     }
 }
 async function resetBudget(){ 
     if(confirm('Reset?') && budget){ 
-        await supabase.from('budget').delete().eq('id', budget.id);
+        await supabaseClient.from('budget').delete().eq('id', budget.id);
         budget=null; updateAll(); 
     }
 }
@@ -240,14 +240,14 @@ function renderCats(){
 async function addCat(){ 
     const n=document.getElementById('cat-name').value, l=parseVal(document.getElementById('cat-lim').value); 
     if(n&&l){
-        const {data} = await supabase.from('category_budgets').insert([{user_id: currentUser.id, name: n, category_limit: l}]).select();
+        const {data} = await supabaseClient.from('category_budgets').insert([{user_id: currentUser.id, name: n, category_limit: l}]).select();
         if(data) categoryBudgets.push({id: data[0].id, name:n, limit:l}); 
         updateAll();
     } 
 }
 async function delCat(id){ 
     if(confirm('Hapus?')){
-        await supabase.from('category_budgets').delete().eq('id', id);
+        await supabaseClient.from('category_budgets').delete().eq('id', id);
         categoryBudgets=categoryBudgets.filter(c=>c.id!==id); 
         updateAll();
     } 
@@ -271,18 +271,18 @@ async function saveGoal(id, amt){
     if(g.saved_amount>=g.target_amount) g.completed=true; 
     
     // Update Supabase Saving Goal
-    await supabase.from('savings_goals').update({ saved_amount: g.saved_amount, completed: g.completed }).eq('id', id);
+    await supabaseClient.from('savings_goals').update({ saved_amount: g.saved_amount, completed: g.completed }).eq('id', id);
     
     // Record Transaction
     const tx = { user_id: currentUser.id, name:`Tabungan: ${g.name}`, amount:-amt, type:'saving', category:'Tabungan', date:new Date().toISOString()};
-    const { data } = await supabase.from('transactions').insert([tx]).select();
+    const { data } = await supabaseClient.from('transactions').insert([tx]).select();
     if(data) transactions.push(data[0]);
     
     updateAll(); 
 }
 async function delGoal(id){ 
     if(confirm('Hapus target tabungan ini?')){ 
-        await supabase.from('savings_goals').delete().eq('id', id);
+        await supabaseClient.from('savings_goals').delete().eq('id', id);
         savingsGoals=savingsGoals.filter(x=>x.id!==id); 
         updateAll(); 
     } 
@@ -524,7 +524,7 @@ function exportPDF() {
 window.exportPDF = exportPDF;
 
 async function logout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = 'login.html';
 }
 window.logout = logout;
