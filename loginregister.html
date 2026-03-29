@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyUang - Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>\n    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
@@ -71,7 +71,11 @@
         </div>
     </div>
 
-    <script>
+        <script>
+        const supabaseUrl = 'https://pmuufdztdkaiblyflmij.supabase.co';
+        const supabaseKey = 'sb_publishable_M-JFpIm9PKoJjnyLSqxQWQ_cD1_vOeG';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         function toggleAuth(page) {
             document.getElementById(page === 'register' ? 'login-page' : 'register-page').classList.add('hidden');
             document.getElementById(page === 'register' ? 'register-page' : 'login-page').classList.remove('hidden');
@@ -82,46 +86,67 @@
         }
 
         // --- LOGIN LOGIC ---
-        document.getElementById('login-form').addEventListener('submit', (e) => {
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = 'Loading...';
+            btn.disabled = true;
+
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            const user = JSON.parse(localStorage.getItem(`user_${email}`));
             const errorEl = document.getElementById('login-error');
 
-            if (user && user.pass === password) {
-                localStorage.setItem('activeUser', email);
-                redirectUser();
-            } else {
-                errorEl.textContent = 'Invalid email or password.';
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+
+            if (error) {
+                errorEl.textContent = error.message;
                 errorEl.classList.remove('hidden');
+            } else {
+                redirectUser();
             }
         });
 
         // --- REGISTER LOGIC ---
-        document.getElementById('register-form').addEventListener('submit', (e) => {
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = 'Loading...';
+            btn.disabled = true;
+
             const name = document.getElementById('register-name').value;
             const email = document.getElementById('register-email').value;
-            const pass = document.getElementById('register-password').value;
-            const country = 'Indonesia'; // HARDCODED COUNTRY
+            const password = document.getElementById('register-password').value;
             const errorEl = document.getElementById('register-error');
 
-            if (localStorage.getItem(`user_${email}`)) {
-                errorEl.textContent = 'Email already exists.';
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: { data: { full_name: name } }
+            });
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+
+            if (error) {
+                errorEl.textContent = error.message;
                 errorEl.classList.remove('hidden');
-                return;
+            } else {
+                alert('Registrasi sukses! Silakan login.');
+                toggleAuth('login');
             }
-            
-            const newUser = { name, email, pass, country }; 
-            localStorage.setItem(`user_${email}`, JSON.stringify(newUser));
-            localStorage.setItem('activeUser', email);
-            
-            redirectUser();
         });
 
-        window.onload = () => {
-            if (localStorage.getItem('activeUser')) redirectUser();
+        window.onload = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                redirectUser();
+                return;
+            }
         }
     </script>
 </body>
