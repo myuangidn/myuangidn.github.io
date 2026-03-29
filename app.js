@@ -525,7 +525,7 @@ window.exportPDF = exportPDF;
 
 async function logout() {
     await supabase.auth.signOut();
-    window.location.href = 'loginregister.html';
+    window.location.href = 'login.html';
 }
 window.logout = logout;
 
