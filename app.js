@@ -2,6 +2,8 @@
 const supabaseUrl = 'https://pmuufdztdkaiblyflmij.supabase.co';
 const supabaseKey = 'sb_publishable_M-JFpIm9PKoJjnyLSqxQWQ_cD1_vOeG';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+const GEMINI_API_KEY = 'AIzaSyBTRSadDQgpPMHL1KOkQwxxOUV5QgdBnKc';
+const GROQ_API_KEY = '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';
 
 let transactions = [], savingsGoals = [], budget = null, categoryBudgets = [], currentUser = null;
 let cashFlowChartInstance=null, expenseChartInstance=null, incomeExpenseChartInstance=null;
@@ -325,9 +327,72 @@ function saveApiKey(){
     alert('API Key tersimpan! Fitur AI sekarang aktif.');
 }
 
+// --- ANALISIS STABILITAS PEKERJAAN / PENDAPATAN ---
+function analyzeIncomeStability() {
+    const incomes = transactions.filter(t => t.type === 'income');
+    if (incomes.length === 0) return { level: 'Belum Ada Data', icon: '❓', color: 'gray', description: 'Belum ada data pemasukan untuk dianalisis.', monthlyBreakdown: [], incomeCategories: {} };
+
+    // Kelompokkan pemasukan per bulan (key: "2026-03")
+    const monthlyMap = {};
+    const incomeCategories = {};
+    incomes.forEach(t => {
+        const d = new Date(t.date);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthlyMap[key] = (monthlyMap[key] || 0) + Number(t.amount);
+        const cat = t.category || 'Lainnya';
+        incomeCategories[cat] = (incomeCategories[cat] || 0) + Number(t.amount);
+    });
+
+    const months = Object.keys(monthlyMap).sort();
+    const amounts = months.map(m => monthlyMap[m]);
+    const monthlyBreakdown = months.map(m => ({ month: m, amount: monthlyMap[m] }));
+
+    // Hitung variasi (coefficient of variation)
+    const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+    const stdDev = Math.sqrt(amounts.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / amounts.length);
+    const cv = avg > 0 ? (stdDev / avg) * 100 : 0;
+
+    // Cek apakah ada kategori "Gaji" yang dominan (>50% total income)
+    const totalInc = Object.values(incomeCategories).reduce((a, b) => a + b, 0);
+    const gajiAmount = incomeCategories['Gaji'] || 0;
+    const gajiRatio = totalInc > 0 ? (gajiAmount / totalInc) * 100 : 0;
+
+    // Tentukan level stabilitas
+    let level, icon, color, description;
+
+    if (months.length < 2) {
+        level = 'Belum Cukup Data';
+        icon = '📊';
+        color = 'gray';
+        description = 'Butuh minimal 2 bulan data pemasukan untuk analisis stabilitas.';
+    } else if (gajiRatio >= 60 && cv < 25) {
+        level = 'Sangat Stabil';
+        icon = '🏢';
+        color = 'green';
+        description = `Pendapatan didominasi Gaji tetap (${gajiRatio.toFixed(0)}%) dengan fluktuasi rendah. Cocok untuk investasi jangka panjang.`;
+    } else if (gajiRatio >= 40 && cv < 40) {
+        level = 'Cukup Stabil';
+        icon = '👔';
+        color = 'blue';
+        description = `Kombinasi pendapatan cukup teratur. Variasi ${cv.toFixed(0)}% masih wajar. Bisa mulai diversifikasi investasi.`;
+    } else if (cv < 50) {
+        level = 'Moderat';
+        icon = '💼';
+        color = 'yellow';
+        description = `Pendapatan berfluktuasi moderat (CV: ${cv.toFixed(0)}%). Utamakan dana darurat sebelum investasi agresif.`;
+    } else {
+        level = 'Tidak Stabil';
+        icon = '⚠️';
+        color = 'red';
+        description = `Pendapatan sangat fluktuatif (CV: ${cv.toFixed(0)}%). Prioritaskan tabungan darurat & hindari instrumen berisiko tinggi.`;
+    }
+
+    return { level, icon, color, description, monthlyBreakdown, incomeCategories, cv, gajiRatio, avgIncome: avg, totalMonths: months.length };
+}
+
 function analyzeFinancialProfile() {
-    const totalIncome = getFilteredTransactions().filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-    const totalExpense = getFilteredTransactions().filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
+    const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+    const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
     const balance = totalIncome - totalExpense;
     
     const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
@@ -347,7 +412,10 @@ function analyzeFinancialProfile() {
 
     if (transactions.length === 0) { profile = "Belum Ada Data"; score = 0; }
 
-    return { totalIncome, totalExpense, balance, savingsRate, topCategories, topCategoryName, profile, score };
+    // Tambahkan data stabilitas pekerjaan
+    const stability = analyzeIncomeStability();
+
+    return { totalIncome, totalExpense, balance, savingsRate, topCategories, topCategoryName, profile, score, stability };
 }
 
 function updateInvestmentPage() {
@@ -357,6 +425,24 @@ function updateInvestmentPage() {
     document.getElementById('health-status').className = `text-xs mt-2 font-medium ${analysis.score > 70 ? 'text-green-500' : (analysis.score > 50 ? 'text-yellow-500' : 'text-red-500')}`;
     document.getElementById('risk-profile').innerText = analysis.profile;
     document.getElementById('invest-potential').innerText = formatIDR(Math.max(0, analysis.balance * 0.2)); 
+
+    // Update Kartu Stabilitas Pekerjaan
+    const stabilityEl = document.getElementById('job-stability-card');
+    if (stabilityEl) {
+        const s = analysis.stability;
+        const colorMap = { green: 'text-green-600 bg-green-50', blue: 'text-blue-600 bg-blue-50', yellow: 'text-yellow-600 bg-yellow-50', red: 'text-red-600 bg-red-50', gray: 'text-gray-500 bg-gray-50' };
+        const borderMap = { green: 'border-green-400', blue: 'border-blue-400', yellow: 'border-yellow-400', red: 'border-red-400', gray: 'border-gray-300' };
+        stabilityEl.innerHTML = `
+            <div class="bg-white p-6 rounded-3xl shadow-card border-l-4 ${borderMap[s.color] || 'border-gray-300'}">
+                <p class="text-xs text-gray-400 uppercase font-bold mb-2">Stabilitas Pekerjaan</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-2xl">${s.icon}</span>
+                    <h3 class="text-xl font-bold text-gray-800">${s.level}</h3>
+                </div>
+                <p class="text-xs mt-2 text-gray-500 leading-relaxed">${s.description}</p>
+            </div>`;
+    }
+
     renderPlatformSuggestions(analysis.profile);
 }
 
@@ -374,30 +460,208 @@ function renderPlatformSuggestions(profile) {
     container.innerHTML = filtered.map(p => `<div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"><div class="flex justify-between items-start mb-2"><span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${p.color}">${p.type}</span><i class="fa-solid fa-arrow-up-right-from-square text-gray-300"></i></div><h4 class="font-bold text-gray-800">${p.name}</h4><p class="text-xs text-gray-500 mt-1">${p.desc}</p></div>`).join('');
 }
 
+// --- GENERATE AI ADVICE (DENGAN GOOGLE SEARCH GROUNDING) ---
 async function generateAIAdvice() {
     const loading = document.getElementById('ai-loading');
     const content = document.getElementById('ai-content');
     const btn = document.getElementById('btn-generate-ai');
     loading.classList.remove('hidden'); content.classList.add('hidden'); btn.disabled = true; btn.classList.add('opacity-50');
+    
     const analysis = analyzeFinancialProfile();
-    const apiKey = localStorage.getItem('gemini_key');
+    const stability = analysis.stability;
+    const apiKey = localStorage.getItem('gemini_key') || GEMINI_API_KEY;
     
     if (apiKey && analysis.totalIncome > 0) {
         try {
-            const prompt = `Bertindaklah sebagai penasihat keuangan pribadi untuk MyUang. Data: Pemasukan ${formatIDR(analysis.totalIncome)}, Pengeluaran ${formatIDR(analysis.totalExpense)}, Sisa ${formatIDR(analysis.balance)}, Top Kategori ${analysis.topCategoryName}, Rasio Tabungan ${analysis.savingsRate.toFixed(1)}%. Berikan 3 saran singkat: evaluasi belanja, saran alokasi investasi (Reksadana/Saham/Emas), dan 1 kalimat motivasi. Gunakan Markdown. Bahasa Indonesia santai.`;
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-            const data = await response.json();
-            if(data.error) throw new Error(data.error.message);
-            content.innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
-        } catch (error) { console.error(error); content.innerHTML = `<p class="text-red-500 text-xs">Gagal menghubungi AI. Menggunakan saran offline.</p>` + generateOfflineAdvice(analysis); }
-    } else { await new Promise(r => setTimeout(r, 1500)); content.innerHTML = generateOfflineAdvice(analysis); }
+            // Rangkum data kategori pemasukan untuk prompt
+            const incomeCatSummary = stability.incomeCategories 
+                ? Object.entries(stability.incomeCategories).map(([cat, amt]) => `${cat}: ${formatIDR(amt)}`).join(', ') 
+                : 'Belum ada';
+
+            // Rangkum riwayat pemasukan per bulan
+            const monthlyHistory = stability.monthlyBreakdown 
+                ? stability.monthlyBreakdown.map(m => `${m.month}: ${formatIDR(m.amount)}`).join(', ') 
+                : 'Belum ada';
+
+            // Rangkum top 3 kategori pengeluaran
+            const topExpenseSummary = analysis.topCategories.slice(0, 3).map(([cat, amt]) => `${cat}: ${formatIDR(amt)}`).join(', ');
+
+            const systemPrompt = `Kamu adalah "MyUang AI Advisor", penasihat keuangan & investasi pribadi yang cerdas, berbahasa Indonesia santai tapi profesional. Tugasmu:
+
+1. **ANALISIS STABILITAS PEKERJAAN**: Dari data pendapatan user, simpulkan apakah mereka punya pekerjaan tetap/stabil atau tidak tetap (freelance/gig). Berikan penilaianmu di AWAL jawaban.
+
+2. **EVALUASI KESEHATAN KEUANGAN**: Analisis pola pengeluaran dan rasio tabungan mereka.
+
+3. **REKOMENDASI INVESTASI REAL-TIME**: Gunakan kemampuan pencarian Google (Google Search) untuk mencari info terkini tentang:
+   - Suku bunga deposito bank di Indonesia saat ini
+   - Kinerja IHSG dan reksadana terkini
+   - Harga emas hari ini
+   - Platform investasi yang sedang populer di Indonesia (Bibit, Ajaib, Bareksa, Pluang, Stockbit, Tokocrypto, dll)
+   - Tren pasar investasi Indonesia terbaru
+   
+   Sebutkan angka/data spesifik dari hasil pencarian (misal: "Deposito BCA saat ini 4.25% p.a." atau "IHSG hari ini di level 7.xxx").
+
+4. **SARAN PERSONAL**: Berikan rekomendasi platform DAN jenis investasi yang COCOK untuk profil user ini (sesuaikan dengan stabilitas pekerjaannya dan kondisi keuangannya).
+
+Format jawaban dalam **Markdown** yang rapi dengan heading, bullet points, dan emoji. Buat ringkas tapi informatif (maks 400 kata).`;
+
+            const userPrompt = `Berikut data keuangan saya:
+
+📊 **Ringkasan Keuangan:**
+- Total Pemasukan: ${formatIDR(analysis.totalIncome)}
+- Total Pengeluaran: ${formatIDR(analysis.totalExpense)}
+- Saldo Tersisa: ${formatIDR(analysis.balance)}
+- Rasio Tabungan: ${analysis.savingsRate.toFixed(1)}%
+- Profil Risiko: ${analysis.profile}
+
+💼 **Data Pendapatan (Stabilitas Karir):**
+- Stabilitas saat ini: ${stability.level}
+- Riwayat pemasukan per bulan: ${monthlyHistory}
+- Kategori pemasukan: ${incomeCatSummary}
+- Jumlah bulan tercatat: ${stability.totalMonths || 0}
+${stability.cv !== undefined ? `- Variasi pendapatan (CV): ${stability.cv.toFixed(1)}%` : ''}
+${stability.gajiRatio !== undefined ? `- Rasio gaji tetap: ${stability.gajiRatio.toFixed(0)}%` : ''}
+
+💸 **Top Kategori Pengeluaran:** ${topExpenseSummary || 'Belum ada'}
+
+Tolong analisis kondisi keuangan saya dan rekomendasikan investasi yang sesuai, termasuk platform dan jenis investasi spesifik berdasarkan kondisi pasar HARI INI.`;
+
+            // === STRATEGI MULTI-PROVIDER: Gemini dulu, lalu Groq sebagai fallback ===
+            const geminiModels = [
+                { name: 'gemini-2.0-flash', useGrounding: true },
+                { name: 'gemini-2.0-flash-lite', useGrounding: true },
+                { name: 'gemini-1.5-flash', useGrounding: false }
+            ];
+
+            let aiSuccess = false;
+
+            // --- TAHAP 1: Coba semua model Gemini ---
+            for (const model of geminiModels) {
+                try {
+                    console.log(`[MyUang AI] Mencoba Gemini: ${model.name}...`);
+                    
+                    const requestBody = {
+                        system_instruction: {
+                            parts: [{ text: systemPrompt }]
+                        },
+                        contents: [{ 
+                            role: 'user',
+                            parts: [{ text: userPrompt }] 
+                        }]
+                    };
+
+                    if (model.useGrounding) {
+                        requestBody.tools = [{ google_search: {} }];
+                    }
+
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent?key=${apiKey}`, 
+                        { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify(requestBody) 
+                        }
+                    );
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        console.warn(`[MyUang AI] Gemini ${model.name} gagal:`, data.error.message);
+                        continue;
+                    }
+
+                    const textParts = data.candidates[0].content.parts.filter(p => p.text).map(p => p.text);
+                    const fullText = textParts.join('\n');
+                    content.innerHTML = marked.parse(fullText);
+
+                    content.innerHTML += `<div class="mt-3 flex items-center gap-2"><span class="text-[10px] bg-purple-50 text-ai-purple px-2 py-1 rounded-full font-medium"><i class="fa-solid fa-microchip mr-1"></i>${model.name}${model.useGrounding ? ' + Google Search' : ''}</span></div>`;
+
+                    const groundingMeta = data.candidates[0].groundingMetadata;
+                    if (groundingMeta && groundingMeta.searchEntryPoint && groundingMeta.searchEntryPoint.renderedContent) {
+                        content.innerHTML += `<div class="mt-4 pt-4 border-t border-purple-100">${groundingMeta.searchEntryPoint.renderedContent}</div>`;
+                    } else if (groundingMeta && groundingMeta.groundingChunks && groundingMeta.groundingChunks.length > 0) {
+                        const sources = groundingMeta.groundingChunks
+                            .filter(c => c.web)
+                            .slice(0, 5)
+                            .map(c => `<a href="${c.web.uri}" target="_blank" class="text-ai-purple hover:underline text-[11px]">${c.web.title || c.web.uri}</a>`)
+                            .join(' • ');
+                        if (sources) {
+                            content.innerHTML += `<div class="mt-4 pt-4 border-t border-purple-100"><p class="text-[10px] text-gray-400 mb-1"><i class="fa-solid fa-globe mr-1"></i>Sumber data real-time:</p><div class="flex flex-wrap gap-1">${sources}</div></div>`;
+                        }
+                    }
+
+                    aiSuccess = true;
+                    console.log(`[MyUang AI] Berhasil dengan Gemini: ${model.name}`);
+                    break;
+
+                } catch (fetchError) {
+                    console.warn(`[MyUang AI] Error Gemini ${model.name}:`, fetchError);
+                    continue;
+                }
+            }
+
+            // --- TAHAP 2: Fallback ke Groq (Llama) jika semua Gemini gagal ---
+            if (!aiSuccess) {
+                try {
+                    console.log('[MyUang AI] Semua Gemini gagal, mencoba Groq (Llama 3.3 70B)...');
+                    
+                    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${GROQ_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: 'llama-3.3-70b-versatile',
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { role: 'user', content: userPrompt }
+                            ],
+                            temperature: 0.7,
+                            max_tokens: 1500
+                        })
+                    });
+                    const groqData = await groqResponse.json();
+
+                    if (groqData.error) throw new Error(groqData.error.message);
+
+                    const groqText = groqData.choices[0].message.content;
+                    content.innerHTML = marked.parse(groqText);
+                    content.innerHTML += `<div class="mt-3 flex items-center gap-2"><span class="text-[10px] bg-orange-50 text-orange-600 px-2 py-1 rounded-full font-medium"><i class="fa-solid fa-bolt mr-1"></i>Llama 3.3 70B via Groq</span></div>`;
+                    
+                    aiSuccess = true;
+                    console.log('[MyUang AI] Berhasil dengan Groq!');
+
+                } catch (groqError) {
+                    console.error('[MyUang AI] Groq juga gagal:', groqError);
+                }
+            }
+
+            if (!aiSuccess) {
+                throw new Error('Semua provider AI (Gemini & Groq) tidak tersedia saat ini');
+            }
+
+        } catch (error) { 
+            console.error('AI Advice Error:', error); 
+            content.innerHTML = `<p class="text-red-500 text-xs mb-3"><i class="fa-solid fa-circle-exclamation mr-1"></i>Gagal menghubungi AI: ${error.message}. Menggunakan saran offline.</p>` + generateOfflineAdvice(analysis); 
+        }
+    } else { 
+        await new Promise(r => setTimeout(r, 1500)); 
+        content.innerHTML = generateOfflineAdvice(analysis); 
+    }
     loading.classList.add('hidden'); content.classList.remove('hidden'); btn.disabled = false; btn.classList.remove('opacity-50');
 }
 window.generateAIAdvice = generateAIAdvice;
 
 function generateOfflineAdvice(data) {
     if (data.totalIncome === 0) return "<p>Halo! Yuk catat pemasukan dan pengeluaranmu dulu agar saya bisa memberikan saran investasi yang akurat!</p>";
+    
     let advice = "";
+    
+    // Tambahkan info stabilitas pekerjaan di saran offline
+    if (data.stability && data.stability.level !== 'Belum Ada Data' && data.stability.level !== 'Belum Cukup Data') {
+        advice += `<div class="bg-purple-50 border border-purple-100 rounded-2xl p-4 mb-4"><p class="text-xs font-bold text-ai-purple mb-1">${data.stability.icon} Stabilitas Pekerjaan: ${data.stability.level}</p><p class="text-xs text-gray-600">${data.stability.description}</p></div>`;
+    }
+
     if (data.savingsRate < 10) {
         advice += `<p><strong>Waduh, hati-hati!</strong> Tabunganmu di bawah 10%. Kategori <strong>${data.topCategoryName}</strong> terlihat boros. Kurangi jajan ya.</p><p class="mt-2">💡 <strong>Saran:</strong> Fokus Dana Darurat di <strong>Reksadana Pasar Uang</strong>.</p>`;
     } else if (data.savingsRate < 40) {
@@ -405,6 +669,8 @@ function generateOfflineAdvice(data) {
     } else {
         advice += `<p><strong>Luar biasa!</strong> Cashflow sehat (Surplus > 40%).</p><p class="mt-2">💡 <strong>Saran:</strong> Coba instrumen agresif seperti <strong>Saham Bluechip</strong>.</p>`;
     }
+
+    advice += `<p class="mt-3 text-xs text-gray-400 italic"><i class="fa-solid fa-info-circle mr-1"></i>Masukkan Gemini API Key untuk mendapatkan analisis AI real-time dengan data pasar terkini.</p>`;
     return advice;
 }
 

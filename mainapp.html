@@ -195,11 +195,10 @@
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                             <div>
                                 <h2 class="text-2xl font-bold text-ai-purple"><i class="fa-solid fa-robot mr-2"></i>Advisor AI</h2>
-                                <p class="text-gray-400 text-xs max-w-md">Analisis cerdas berdasarkan pola transaksi, profil risiko, dan arus kas keuanganmu.</p>
+                                <p class="text-gray-400 text-xs max-w-md">Analisis cerdas berdasarkan pola transaksi, stabilitas pekerjaan, dan data pasar real-time.</p>
                             </div>
-                            <button onclick="openApiKeyModal()" class="text-xs text-ai-purple bg-purple-50 px-3 py-2 rounded-lg hover:bg-purple-100 transition"><i class="fa-solid fa-key mr-1"></i> Set API Key (Optional)</button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div class="bg-white p-6 rounded-3xl shadow-card border-l-4 border-pastel-blue">
                                 <p class="text-xs text-gray-400 uppercase font-bold mb-2">Kesehatan Finansial</p>
                                 <div class="flex items-end gap-2"><h3 id="health-score" class="text-4xl font-bold text-gray-800">0</h3><span class="text-sm text-gray-400 mb-1">/ 100</span></div>
@@ -208,12 +207,19 @@
                             <div class="bg-white p-6 rounded-3xl shadow-card border-l-4 border-yellow-400">
                                 <p class="text-xs text-gray-400 uppercase font-bold mb-2">Profil Risiko (Estimasi)</p>
                                 <h3 id="risk-profile" class="text-xl font-bold text-gray-800">Belum Terdeteksi</h3>
-                                <p id="risk-desc" class="text-xs mt-2 text-gray-400">Berdasarkan rasio tabungan & pengeluaran.</p>
+                                <p id="risk-desc" class="text-xs mt-2 text-gray-400">Berdasarkan rasio tabungan &amp; pengeluaran.</p>
                             </div>
                             <div class="bg-white p-6 rounded-3xl shadow-card border-l-4 border-green-500">
                                 <p class="text-xs text-gray-400 uppercase font-bold mb-2">Potensi Investasi Bulanan</p>
                                 <h3 id="invest-potential" class="text-2xl font-bold text-green-600">Rp 0</h3>
                                 <p class="text-xs mt-2 text-gray-400">Disarankan 20% dari sisa uang.</p>
+                            </div>
+                            <div id="job-stability-card">
+                                <div class="bg-white p-6 rounded-3xl shadow-card border-l-4 border-gray-300">
+                                    <p class="text-xs text-gray-400 uppercase font-bold mb-2">Stabilitas Pekerjaan</p>
+                                    <div class="flex items-center gap-2 mb-1"><span class="text-2xl">❓</span><h3 class="text-xl font-bold text-gray-800">Menganalisis...</h3></div>
+                                    <p class="text-xs mt-2 text-gray-500">Berdasarkan riwayat pemasukan bulananmu.</p>
+                                </div>
                             </div>
                         </div>
                         <div class="bg-gradient-to-br from-white to-purple-50 p-6 md:p-8 rounded-[2rem] shadow-card relative overflow-hidden border border-purple-100">
@@ -221,15 +227,19 @@
                             <div class="flex justify-between items-center mb-6 relative z-10">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-ai-purple text-white flex items-center justify-center shadow-glow"><i class="fa-solid fa-sparkles"></i></div>
-                                    <h3 class="font-bold text-gray-800">Rekomendasi Cerdas</h3>
+                                    <div>
+                                        <h3 class="font-bold text-gray-800">Rekomendasi Cerdas</h3>
+                                        <p class="text-[10px] text-gray-400">Powered by Gemini AI + Google Search</p>
+                                    </div>
                                 </div>
                                 <button onclick="generateAIAdvice()" id="btn-generate-ai" class="bg-ai-purple text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-soft hover:shadow-lg hover:bg-purple-700 transition-all flex items-center gap-2"><i class="fa-solid fa-rotate"></i> Analisis Ulang</button>
                             </div>
-                            <div id="ai-loading" class="hidden py-8 text-center"><div class="typing-indicator mb-2"><span></span><span></span><span></span></div><p class="text-xs text-gray-400 animate-pulse">Sedang membaca kebiasaan keuanganmu...</p></div>
-                            <div id="ai-content" class="prose max-w-none text-gray-600 text-sm relative z-10"><p class="italic text-gray-400">Klik "Analisis Ulang" untuk mendapatkan saran investasi berdasarkan data keuangan terbarumu.</p></div>
+                            <div id="ai-loading" class="hidden py-8 text-center"><div class="typing-indicator mb-2"><span></span><span></span><span></span></div><p class="text-xs text-gray-400 animate-pulse">Sedang menganalisis data keuangan & mencari info pasar terkini...</p></div>
+                            <div id="ai-content" class="prose max-w-none text-gray-600 text-sm relative z-10"><p class="italic text-gray-400">Klik "Analisis Ulang" untuk mendapatkan saran investasi berbasis AI dengan data pasar real-time.</p></div>
                         </div>
                         <div><h3 class="font-bold text-gray-700 mb-4 ml-1">Platform Disarankan</h3><div id="platform-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div></div>
                     </div>
+
 
                     <!-- UTILITY MODALS -->
                     <div id="income" class="page hidden flex justify-center">
