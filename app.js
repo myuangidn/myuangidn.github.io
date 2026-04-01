@@ -16,7 +16,7 @@ async function loadData() {
     const { data: txs } = await supabaseClient.from('transactions').select('*').order('date', { ascending: true });
     transactions = txs || [];
     
-    const { data: svgs } = await supabaseClient.from('savings_goals').select('*').order('date', { ascending: true });
+    const { data: svgs } = await supabaseClient.from('savings_goals').select('*');
     savingsGoals = svgs || [];
     
     const { data: bg } = await supabaseClient.from('budget').select('*').single();
